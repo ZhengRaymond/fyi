@@ -5,9 +5,11 @@ from copy import copy
 import subprocess
 
 DIR = sys.path[0] + "/"
-f = open(DIR + "messages", "w+")
-filecontents = f.read()
-if filecontents == "":
+try:
+    f = open(DIR + "messages", "rw")
+    filecontents = f.read()
+except:
+    f = open(DIR + "messages", "w+")
     filecontents = "{}"
 contents = json.loads(filecontents)
 f.close()
@@ -23,6 +25,8 @@ HELPMSG = """
 def process():
     args = sys.argv
    
+    dirty = False
+
     if len(args) == 1:
         process_fetch([])
     elif args[1] == "help":
@@ -31,25 +35,31 @@ def process():
         process_execute(args)
     elif args[1] == "add":
         process_add(args[2:])
+        dirty = True
     elif args[1] == "addgroup":
         process_add_group(args[2:])
+        dirty = True
     elif args[1] == "del":
         process_del(args[2:])
+        dirty = True
     elif args[1] == "delgroup":
         process_del_group(args[2:])
+        dirty = True
     else:
         process_fetch(args[1:])
-    messageFiles = filter(lambda f: f[:8] == "messages" and f != "messages", os.listdir(DIR))
-    messageFiles = [(int(messageFile[messageFile.find(".") + 1:]), messageFile) for messageFile in messageFiles]
-    messageFiles = list(reversed(sorted(messageFiles)))[-100:]
-    for fileNum, messageFile in messageFiles:
-        newMessageFile = "messages." + str(fileNum + 1)
-        os.rename(DIR + messageFile, DIR + newMessageFile)
-    os.rename(DIR + "messages", DIR + "messages.1")
 
-    w = open(DIR + "messages", 'w')
-    w.write(json.dumps(contents))
-    w.close()
+    if dirty:
+        messageFiles = filter(lambda f: f[:8] == "messages" and f != "messages", os.listdir(DIR))
+        messageFiles = [(int(messageFile[messageFile.find(".") + 1:]), messageFile) for messageFile in messageFiles]
+        messageFiles = list(reversed(sorted(messageFiles)))[-100:]
+        for fileNum, messageFile in messageFiles:
+            newMessageFile = "messages." + str(fileNum + 1)
+            os.rename(DIR + messageFile, DIR + newMessageFile)
+        os.rename(DIR + "messages", DIR + "messages.1")
+
+        w = open(DIR + "messages", 'w+')
+        w.write(json.dumps(contents))
+        w.close()
 
 def process_add_group(keys):
     current = contents
